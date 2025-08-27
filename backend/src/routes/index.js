@@ -50,12 +50,12 @@ export default async function routes(fastify, options) {
 
         // Determine classification based on whether this is a reply or new email
         let emailClassification = 'sales'; // Default to sales for new emails
-        
+
         // If there's original email context, it's a follow-up
         if (original_email) {
             emailClassification = 'follow-up';
         }
-        
+
         try {
             const result = await generateEmail({
                 apiKey: OPENAI_API_KEY,
@@ -67,25 +67,50 @@ export default async function routes(fastify, options) {
             return result;
         } catch (error) {
             console.error('Email generation error:', error);
-
+            const parsedEmail = typeof original_email === 'string' ? JSON.parse(original_email) : original_email;
             if (error.message.includes('quota') || error.message.includes('429')) {
-                // Fallback response when quota is exceeded
-                let fallbackSubject = parsedEmail.subject || 'Generated Email';
+                // Enhanced fallback response when quota is exceeded
+                let fallbackSubject = parsedEmail?.subject || 'Generated Email';
                 let fallbackBody = prompt;
 
-                // If this is a reply, extract subject from original email
                 if (original_email) {
                     try {
-                        const parsedEmail = typeof original_email === 'string' ? JSON.parse(original_email) : original_email;
+                        // Enhanced follow-up email logic
                         fallbackSubject = `Re: ${parsedEmail.subject}`;
-                        fallbackBody = `${prompt}\n\n--- Original Message ---\nFrom: ${parsedEmail.to}\nSubject: ${parsedEmail.subject}\n\n${parsedEmail.body}`;
+                        
+                        // Add professional follow-up text
+                        const followUpText = `Thank you for your previous message. I appreciate you taking the time to reach out.\n\n${prompt}\n\nI look forward to hearing from you soon.\n\nBest regards,\n[Your Name]`;
+                        
+                        fallbackBody = `${followUpText}\n\n--- Original Message ---\nFrom: ${parsedEmail.to}\nSubject: ${parsedEmail.subject}\n\n${parsedEmail.body}`;
                     } catch (parseError) {
                         console.error('Error parsing original email for fallback:', parseError);
                         fallbackSubject = 'Re: Previous Email';
-                        fallbackBody = `${prompt}`;
+                        fallbackBody = `Thank you for your message. ${prompt}\n\nBest regards,\n[Your Name]`;
                     }
+                } else {
+                
+                    const salesTemplates = [
+                        {
+                            subject: 'Special Offer Just for You!',
+                            body: `Hi there,\n\nI hope this message finds you well. I wanted to personally reach out because we have an exclusive offer that I think would be perfect for you.\n\n${prompt}\n\nWe're currently offering a limited-time discount of 20% off for new customers. This offer expires soon, so don't miss out!\n\nWould you be interested in learning more about how we can help you achieve your goals?\n\nBest regards,\n[Your Name]\n[Your Company]`
+                        },
+                        {
+                            subject: 'How Can We Help You Today?',
+                            body: `Hello,\n\nThank you for your interest in our services. I'm reaching out to see how we can best assist you.\n\n${prompt}\n\nWe offer competitive pricing and flexible solutions tailored to your specific needs. Plus, we're currently running a promotion with special rates for qualified clients.\n\nI'd love to schedule a quick call to discuss your requirements and show you how we can add value to your business.\n\nLooking forward to connecting with you!\n\nBest regards,\n[Your Name]\n[Your Company]`
+                        },
+                        {
+                            subject: 'Exclusive Business Opportunity',
+                            body: `Dear Valued Prospect,\n\nI hope you're having a great day! I'm reaching out because we've identified your business as a perfect fit for our premium solutions.\n\n${prompt}\n\nAs a special introduction, we're offering:\n• 30-day free trial\n• 15% discount on first contract\n• Priority support\n• Custom onboarding\n\nThis exclusive offer is only available to select businesses like yours. Would you be interested in a brief consultation to explore this opportunity?\n\nBest regards,\n[Your Name]\n[Your Company]`
+                        }
+                    ];
+                    
+                    // Randomly select a sales template
+                    const randomTemplate = salesTemplates[Math.floor(Math.random() * salesTemplates.length)];
+                    fallbackSubject = randomTemplate.subject;
+                    fallbackBody = randomTemplate.body;
                 }
-                console.log('Fallback email, due to quota exceeded');
+                
+                console.log('Enhanced fallback email generated, due to quota exceeded');
 
                 return reply.status(200).send({
                     subject: fallbackSubject,

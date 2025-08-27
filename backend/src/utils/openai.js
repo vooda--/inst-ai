@@ -16,13 +16,13 @@ const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
  * @returns {Promise<Object>} OpenAI response
  */
 export async function makeOpenAIRequest({
-    apiKey,
-    model = 'gpt-3.5-turbo',
-    messages,
-    maxTokens = 500,
-    temperature = 0.7,
-    retries = 1
-}) {
+                                            apiKey,
+                                            model = 'gpt-3.5-turbo',
+                                            messages,
+                                            maxTokens = 500,
+                                            temperature = 0.7,
+                                            retries = 1
+                                        }) {
     if (!apiKey) {
         throw new Error('OpenAI API key is required');
     }
@@ -46,7 +46,7 @@ export async function makeOpenAIRequest({
     });
 
     let lastError;
-    
+
     for (let attempt = 0; attempt <= retries; attempt++) {
         try {
             const response = await fetch(OPENAI_API_URL, {
@@ -60,7 +60,7 @@ export async function makeOpenAIRequest({
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                
+
                 console.error(`OpenAI API Error (attempt ${attempt + 1}):`, {
                     status: response.status,
                     statusText: response.statusText,
@@ -86,7 +86,7 @@ export async function makeOpenAIRequest({
             }
 
             const data = await response.json();
-            
+
             console.log('OpenAI API Success:', {
                 model: data.model,
                 usage: data.usage,
@@ -96,7 +96,7 @@ export async function makeOpenAIRequest({
             return data;
         } catch (error) {
             lastError = error;
-            
+
             if (attempt < retries) {
                 console.log(`Request failed (attempt ${attempt + 1}), retrying...`);
                 continue;
@@ -117,29 +117,28 @@ export async function makeOpenAIRequest({
  * @returns {Promise<Object>} Generated email with subject and body
  */
 export async function generateEmail({
-    apiKey,
-    prompt,
-    classification = 'sales',
-    originalEmail = null
-}) {
-    // Determine classification based on whether this is a reply or new email
+                                        apiKey,
+                                        prompt,
+                                        classification = 'sales',
+                                        originalEmail = null
+                                    }) {
     let emailClassification = classification;
-    
+
     // If there's original email context, it's a follow-up
     if (originalEmail) {
         emailClassification = 'follow-up';
     }
-    
+
     const systemMessages = [
         {
             role: "system",
-            content: `You are a ${emailClassification} email assistant. Keep it under 40 words. Return only the email content without any markdown formatting or JSON structure.`
+            content: `You are a ${emailClassification} email assistant. Keep it under 40 words. Return only the email content JSON (subject, body) without any markdown formatting.`
         }
     ];
 
     if (originalEmail) {
         try {
-            const parsedEmail = typeof originalEmail === 'string' ? JSON.parse(originalEmail) : originalEmail;
+            const parsedEmail =  JSON.parse(originalEmail);
             systemMessages.push({
                 role: "system",
                 content: `You are responding to this email:\nFrom: ${parsedEmail.to}\nSubject: ${parsedEmail.subject}\nBody: ${parsedEmail.body}`
@@ -151,7 +150,7 @@ export async function generateEmail({
 
     const messages = [
         ...systemMessages,
-        { role: "user", content: prompt }
+        {role: "user", content: prompt}
     ];
 
     const response = await makeOpenAIRequest({
@@ -161,10 +160,21 @@ export async function generateEmail({
         temperature: 0.7,
         retries: 1
     });
-
+    let parsed = '', parsedOriginal = '';
     const text = response.choices[0].message.content;
+
+    try {
+        parsed = JSON.parse(text);
+        parsedOriginal = JSON.parse(originalEmail);
+        console.log('OpenAI API Response:', response);
+        console.log(parsed);
+        console.log(originalEmail);
+    } catch (error) {
+        console.error('Error parsing original email:', error);
+
+    }
     return {
-        subject: text.split('\n')[0],
-        body: text
+        subject: parsed.subject || parsedOriginal?.subject ||  '',
+        body: parsed.body || parsed || text,
     };
 }

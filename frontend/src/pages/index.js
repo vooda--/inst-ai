@@ -11,7 +11,6 @@ import {
     TableHead, 
     TableRow,
     Chip,
-    Button,
     CircularProgress,
     Alert,
     IconButton
@@ -80,13 +79,6 @@ export default function EmailsPage() {
                 <Typography variant="h4" component="h1">
                     Emails
                 </Typography>
-                <Button 
-                    variant="contained" 
-                    color="primary"
-                    href="/compose"
-                >
-                    Compose Email
-                </Button>
             </Box>
 
             {emails.length === 0 ? (

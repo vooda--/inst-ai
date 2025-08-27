@@ -4,17 +4,16 @@
  */
 export function parseEmailResponse(data) {
     console.log('Parsing email response:', data);
-    
+
     // If data is already in the expected format
     if (data.subject && data.body) {
         return data;
     }
-    
+
     // If body is a string, it might contain formatted content
     if (typeof data.body === 'string') {
         const bodyText = data.body.trim();
-        
-        // Check for JSON wrapped in markdown code blocks
+
         if (bodyText.includes('```json')) {
             const jsonMatch = bodyText.match(/```json\s*([\s\S]*?)\s*```/);
             if (jsonMatch) {
@@ -29,7 +28,7 @@ export function parseEmailResponse(data) {
                 }
             }
         }
-        
+
         // Check for plain JSON (without markdown)
         if (bodyText.startsWith('{') && bodyText.endsWith('}')) {
             try {
@@ -42,7 +41,7 @@ export function parseEmailResponse(data) {
                 console.error('Failed to parse plain JSON:', error);
             }
         }
-        
+
         // If it's just plain text, split by first newline for subject/body
         const lines = bodyText.split('\n');
         if (lines.length > 1) {
@@ -51,14 +50,14 @@ export function parseEmailResponse(data) {
                 body: lines.slice(1).join('\n').trim()
             };
         }
-        
+
         // Fallback: treat entire text as body
         return {
             subject: data.subject || 'Generated Email',
             body: bodyText
         };
     }
-    
+
     // Fallback for unexpected formats
     return {
         subject: data.subject || 'Generated Email',

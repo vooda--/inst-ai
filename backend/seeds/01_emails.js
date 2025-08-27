@@ -1,7 +1,6 @@
 export async function seed(knex) {
     await knex('emails').del();
-  
-    // Inserts 10 dummy emails
+
     await knex('emails').insert([
       {
         to: 'alice@example.com',
@@ -75,4 +74,3 @@ export async function seed(knex) {
       },
     ]);
   }
-  
