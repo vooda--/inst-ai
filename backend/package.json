@@ -1,0 +1,27 @@
+{
+  "dependencies": {
+    "@fastify/cors": "^11.1.0",
+    "dotenv": "^16.4.5",
+    "fastify": "^5.5.0",
+    "knex": "^3.1.0",
+    "sqlite3": "^5.1.7"
+  },
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate": "knex migrate:latest",
+    "seed": "knex seed:run",
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "dev:debug": "NODE_ENV=development nodemon --inspect index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "module"
+}
