@@ -1,18 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { 
-    Box, 
-    Typography, 
-    Button, 
-    TextField, 
-    Dialog, 
-    DialogTitle, 
-    DialogContent,
-    DialogActions,
-    Alert,
-    CircularProgress,
-    Paper
-} from '@mui/material';
+import {useEffect, useState} from 'react';
+import {useRouter} from 'next/router';
+import {Alert, Box, Button, CircularProgress, Paper, TextField, Typography} from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
@@ -39,10 +27,10 @@ export default function ComposePage() {
         try {
             setLoading(true);
             setError(null);
-            
+
             // Determine classification based on whether this is a reply or new email
             let classification = 'sales'; // Default for new emails
-            
+
             // Check if this is a reply (has original email context)
             if (originalEmail) {
                 classification = 'follow-up';
@@ -50,21 +38,21 @@ export default function ComposePage() {
                 // For new emails, check if it's sales-related
                 classification = /sale|offer|product|promotion|discount/i.test(prompt) ? 'sales' : 'sales';
             }
-            
+
             const res = await fetch('/api/generate-email', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
                     prompt,
                     classification,
                     original_email: originalEmail ? JSON.stringify(originalEmail) : null
                 }),
             });
-            
+
             if (!res.ok) {
                 throw new Error('Failed to generate email');
             }
-            
+
             const data = await res.json();
             setSubject(data.subject);
             setBody(data.body);
@@ -84,29 +72,21 @@ export default function ComposePage() {
         try {
             setLoading(true);
             setError(null);
-            
+
             const res = await fetch('/api/send-email', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to, cc, bcc, subject, body }),
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({to, cc, bcc, subject, body}),
             });
-            
+
             if (!res.ok) {
                 throw new Error('Failed to send email');
             }
-            
+
             const data = await res.json();
             setSuccess(true);
             setOpen(false);
-            
-            // Reset form
-            setTo('');
-            setCc('');
-            setBcc('');
-            setSubject('');
-            setBody('');
-            setPrompt('');
-            
+            resetForm();
             // Clear success message after 3 seconds
             setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
@@ -116,6 +96,16 @@ export default function ComposePage() {
         }
     };
 
+    const resetForm = () => {
+        // Reset form
+        setTo('');
+        setCc('');
+        setBcc('');
+        setSubject('');
+        setBody('');
+        setPrompt('');
+        setOriginalEmail(null);
+    }
     const handleClose = () => {
         setOpen(false);
         setError(null);
@@ -123,14 +113,14 @@ export default function ComposePage() {
 
     // Handle reply and forward functionality
     useEffect(() => {
-        const { replyTo, forward } = router.query;
-        
+        const {replyTo, clear, forward} = router.query;
+
         if (replyTo) {
-            // Load email for reply
             fetchEmailForReply(replyTo);
         } else if (forward) {
-            // Load email for forward
             fetchEmailForForward(forward);
+        } else if (clear) {
+            resetForm();
         }
     }, [router.query]);
 
@@ -143,7 +133,7 @@ export default function ComposePage() {
                 setTo(email.to);
                 setSubject(`Re: ${email.subject}`);
                 setBody(`\n\n--- Original Message ---\nFrom: ${email.to}\nSubject: ${email.subject}\n\n${email.body}`);
-                
+
                 // Store original email for AI generation context
                 setOriginalEmail(email);
             }
@@ -160,7 +150,7 @@ export default function ComposePage() {
                 const email = data.email;
                 setSubject(`Fwd: ${email.subject}`);
                 setBody(`\n\n--- Forwarded Message ---\nFrom: ${email.to}\nSubject: ${email.subject}\n\n${email.body}`);
-                
+
                 // Store original email for AI generation context
                 setOriginalEmail(email);
             }
@@ -178,12 +168,12 @@ export default function ComposePage() {
             </Box>
 
             {success && (
-                <Alert severity="success" sx={{ mb: 3 }}>
+                <Alert severity="success" sx={{mb: 3}}>
                     Email sent successfully!
                 </Alert>
             )}
 
-            <Paper sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
+            <Paper sx={{p: 3, maxWidth: 800, mx: 'auto'}}>
                 <Box display="flex" flexDirection="column" gap={3}>
                     <TextField
                         label="To *"
@@ -192,7 +182,7 @@ export default function ComposePage() {
                         onChange={(e) => setTo(e.target.value)}
                         placeholder="recipient@example.com"
                     />
-                    
+
                     <TextField
                         label="CC"
                         fullWidth
@@ -200,7 +190,7 @@ export default function ComposePage() {
                         onChange={(e) => setCc(e.target.value)}
                         placeholder="cc@example.com"
                     />
-                    
+
                     <TextField
                         label="BCC"
                         fullWidth
@@ -208,7 +198,7 @@ export default function ComposePage() {
                         onChange={(e) => setBcc(e.target.value)}
                         placeholder="bcc@example.com"
                     />
-                    
+
                     <TextField
                         label="Subject *"
                         fullWidth
@@ -216,7 +206,7 @@ export default function ComposePage() {
                         onChange={(e) => setSubject(e.target.value)}
                         placeholder="Enter email subject"
                     />
-                    
+
                     <TextField
                         label="Body *"
                         fullWidth
@@ -226,7 +216,7 @@ export default function ComposePage() {
                         onChange={(e) => setBody(e.target.value)}
                         placeholder="Enter email body"
                     />
-                    
+
                     <Box>
                         <Typography variant="h6" mb={2}>
                             AI Assistant ✨
@@ -242,12 +232,12 @@ export default function ComposePage() {
                         />
                         <Button
                             variant="outlined"
-                            startIcon={<AutoAwesomeIcon />}
+                            startIcon={<AutoAwesomeIcon/>}
                             onClick={handleGenerate}
                             disabled={loading || !prompt.trim()}
-                            sx={{ mt: 2 }}
+                            sx={{mt: 2}}
                         >
-                            {loading ? <CircularProgress size={20} /> : 'Generate with AI'}
+                            {loading ? <CircularProgress size={20}/> : 'Generate with AI'}
                         </Button>
                     </Box>
 
@@ -261,11 +251,11 @@ export default function ComposePage() {
                         </Button>
                         <Button
                             variant="contained"
-                            startIcon={<SendIcon />}
+                            startIcon={<SendIcon/>}
                             onClick={handleSend}
                             disabled={loading || !to || !subject || !body}
                         >
-                            {loading ? <CircularProgress size={20} /> : 'Send Email'}
+                            {loading ? <CircularProgress size={20}/> : 'Send Email'}
                         </Button>
                     </Box>
                 </Box>

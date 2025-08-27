@@ -9,7 +9,7 @@ export default function App({Component, pageProps}) {
     const router = useRouter();
 
     const handleComposeClick = () => {
-        router.push('/compose');
+        router.push('/compose?clear=true');
     };
 
     return (
@@ -25,8 +25,8 @@ export default function App({Component, pageProps}) {
                 <Box flex={1} overflow="auto">
                     <Component {...pageProps} />
                 </Box>
-                
-            
+
+
                 <Tooltip title="Compose Email" placement="left">
                     <Fab
                         color="primary"
