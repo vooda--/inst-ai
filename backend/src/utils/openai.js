@@ -138,7 +138,7 @@ export async function generateEmail({
 
     if (originalEmail) {
         try {
-            const parsedEmail =  JSON.parse(originalEmail);
+            const parsedEmail = JSON.parse(originalEmail);
             systemMessages.push({
                 role: "system",
                 content: `You are responding to this email:\nFrom: ${parsedEmail.to}\nSubject: ${parsedEmail.subject}\nBody: ${parsedEmail.body}`
@@ -160,12 +160,18 @@ export async function generateEmail({
         temperature: 0.7,
         retries: 1
     });
-    let parsed = '', parsedOriginal = '';
+    let parsed = '', parsedOriginal = '', body = '';
     const text = response.choices[0].message.content;
 
     try {
         parsed = JSON.parse(text);
-        parsedOriginal = JSON.parse(originalEmail);
+        if (originalEmail) {
+            parsedOriginal = JSON.parse(originalEmail);
+            body = `${parsed.body}\n\n--- Original Message ---\nFrom: ${parsedOriginal.to}\nSubject: ${parsedOriginal.subject}\n\n${parsedOriginal.body}`;
+        } else {
+            body = `${parsed.body}`;
+        }
+
         console.log('OpenAI API Response:', response);
         console.log(parsed);
         console.log(originalEmail);
@@ -174,7 +180,7 @@ export async function generateEmail({
 
     }
     return {
-        subject: parsed.subject || parsedOriginal?.subject ||  '',
-        body: parsed.body || parsed || text,
+        subject: parsed.subject || parsedOriginal?.subject || '',
+        body: body || text || '',
     };
 }
